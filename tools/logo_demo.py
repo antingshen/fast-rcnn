@@ -164,6 +164,10 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--net', dest='demo_net', help='Network to use [vgg16]',
                         choices=NETS.keys(), default='vgg16')
+    parser.add_argument('--caffemodel', dest='caffemodel',
+                        help='Path to network caffemodel weights',
+                        default=os.path.join('data', 'fast_rcnn_models',
+                              NETS[args.demo_net][1]))
 
     args = parser.parse_args()
 
@@ -173,9 +177,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     prototxt = os.path.join('models', NETS[args.demo_net][0], 'test.prototxt')
-    # caffemodel = os.path.join('data', 'fast_rcnn_models',
-    #                           NETS[args.demo_net][1])
-    caffemodel = os.path.join('data', 'caffenet_fast_rcnn_iter_10000.caffemodel')
+    # caffemodel = os.path.join('data', 'caffenet_fast_rcnn_iter_10000.caffemodel')
+    caffemodel = args.caffemodel
 
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.\nDid you run ./data/script/'
