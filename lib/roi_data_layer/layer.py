@@ -105,7 +105,11 @@ class RoIDataLayer(caffe.Layer):
 
     def forward(self, bottom, top):
         """Get blobs and copy them into this layer's top blob vector."""
+
         blobs = self._get_next_minibatch()
+        while blobs['rois'].shape[0] == 0: #has no GT bboxes 
+            blobs = self._get_next_minibatch()
+            #TODO: also check for blobs == None?
 
         for blob_name, blob in blobs.iteritems():
             top_ind = self._name_to_top_map[blob_name]
