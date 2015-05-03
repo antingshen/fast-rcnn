@@ -90,10 +90,13 @@ def _compute_targets(rois, overlaps, labels):
     gt_inds = np.where(overlaps == 1)[0]
     # Indices of examples for which we try to make predictions
     ex_inds = np.where(overlaps >= cfg.TRAIN.BBOX_THRESH)[0]
-
+        
     # Get IoU overlap between each ex ROI and gt ROI
     ex_gt_overlaps = utils.cython_bbox.bbox_overlaps(rois[ex_inds, :],
                                                      rois[gt_inds, :])
+    if ex_gt_overlaps.shape[1] == 0:
+        targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
+        return targets
 
     # Find which gt ROI each ex ROI has max overlap with:
     # this will be the ex ROI's gt target
@@ -122,4 +125,5 @@ def _compute_targets(rois, overlaps, labels):
     targets[ex_inds, 2] = targets_dy
     targets[ex_inds, 3] = targets_dw
     targets[ex_inds, 4] = targets_dh
+
     return targets

@@ -28,6 +28,11 @@ for year in ['2007', '2012']:
         __sets[name] = (lambda split=split, year=year:
                 datasets.pascal_voc(split, year))
 
+__sets['voc_logo_trainval'] = (lambda split='trainval', year='logo': 
+                                datasets.pascal_voc(split, year))
+__sets['voc_logo_test'] = (lambda split='test', year='logo': 
+                                datasets.pascal_voc(split, year))
+
 # Set up voc_<year>_<split>_top_<k> using selective search "quality" mode
 # but only returning the first k boxes
 for top_k in np.arange(1000, 11000, 1000):

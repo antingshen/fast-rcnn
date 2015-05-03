@@ -12,6 +12,7 @@ from utils.cython_bbox import bbox_overlaps
 import numpy as np
 import scipy.sparse
 import datasets
+import IPython as ipy
 
 class imdb(object):
     """Image database."""
@@ -164,12 +165,20 @@ class imdb(object):
                 gt_classes = gt_roidb[i]['gt_classes']
                 gt_overlaps = bbox_overlaps(boxes.astype(np.float),
                                             gt_boxes.astype(np.float))
-                argmaxes = gt_overlaps.argmax(axis=1)
-                maxes = gt_overlaps.max(axis=1)
-                I = np.where(maxes > 0)[0]
-                overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
 
-            overlaps = scipy.sparse.csr_matrix(overlaps)
+                gt_overlaps_dims = gt_overlaps.shape
+                #try:
+                if gt_overlaps_dims[1] != 0: #no gt overlaps
+                    #if len(gt_overlaps) > 0: #else, no-logo img
+                    argmaxes = gt_overlaps.argmax(axis=1)
+                    maxes = gt_overlaps.max(axis=1)
+                    I = np.where(maxes > 0)[0]
+                    overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
+                #except:
+                #    ipy.embed()
+                overlaps = scipy.sparse.csr_matrix(overlaps)
+
+
             roidb.append({'boxes' : boxes,
                           'gt_classes' : np.zeros((num_boxes,),
                                                   dtype=np.int32),
@@ -181,11 +190,14 @@ class imdb(object):
     def merge_roidbs(a, b):
         assert len(a) == len(b)
         for i in xrange(len(a)):
-            a[i]['boxes'] = np.vstack((a[i]['boxes'], b[i]['boxes']))
-            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'],
+            if a[i]['gt_overlaps'].shape[0] != 0:
+                a[i]['boxes'] = np.vstack((a[i]['boxes'], b[i]['boxes']))
+                a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'],
                                             b[i]['gt_classes']))
-            a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'],
+                a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'],
                                                        b[i]['gt_overlaps']])
+            else: # No ground truth boxes
+                a[i] = b[i]
         return a
 
     def competition_mode(self, on):
