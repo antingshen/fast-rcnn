@@ -16,7 +16,6 @@ See README.md for installation instructions before running.
 import _init_paths
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect
-from selective_search_ijcv_with_python import selective_search 
 from utils.cython_nms import nms
 from utils.timer import Timer
 import matplotlib.pyplot as plt
@@ -25,48 +24,12 @@ import scipy.io as sio
 import caffe, os, sys, cv2
 import argparse
 
-# CLASSES = ('__background__',
-#            'aeroplane', 'bicycle', 'bird', 'boat',
-#            'bottle', 'bus', 'car', 'cat', 'chair',
-#            'cow', 'diningtable', 'dog', 'horse',
-#            'motorbike', 'person', 'pottedplant',
-#            'sheep', 'sofa', 'train', 'tvmonitor')
-
-CLASSES = (
-    '__background__',
-    'google',
-    'apple',
-    'adidas',
-    'hp',
-    'stellaartois',
-    'paulaner',
-    'guiness',
-    'singha',
-    'cocacola',
-    'dhl',
-    'texaco',
-    'fosters',
-    'fedex',
-    'aldi',
-    'chimay',
-    'shell',
-    'becks',
-    'tsingtao',
-    'ford',
-    'carlsberg',
-    'bmw',
-    'pepsi',
-    'esso',
-    'heineken',
-    'erdinger',
-    'corona',
-    'milka',
-    'ferrari',
-    'nvidia',
-    'rittersport',
-    'ups',
-    'starbucks',
-)
+CLASSES = ('__background__',
+           'aeroplane', 'bicycle', 'bird', 'boat',
+           'bottle', 'bus', 'car', 'cat', 'chair',
+           'cow', 'diningtable', 'dog', 'horse',
+           'motorbike', 'person', 'pottedplant',
+           'sheep', 'sofa', 'train', 'tvmonitor')
 
 NETS = {'vgg16': ('VGG16',
                   'vgg16_fast_rcnn_iter_40000.caffemodel'),
@@ -108,28 +71,17 @@ def vis_detections(im, class_name, dets, thresh=0.5):
     plt.tight_layout()
     plt.draw()
 
-def logo_demo(net, image_name, classes):
+def detect_vid(net, image_name, classes):
     """Detect object classes in an image using pre-computed object proposals."""
+
+    # Load pre-computed Selected Search object proposals
+    box_file = os.path.join(cfg.ROOT_DIR, 'data', 'demo',
+                            image_name + '_boxes.mat')
+    obj_proposals = sio.loadmat(box_file)['boxes']
+
     # Load the demo image
     im_file = os.path.join(cfg.ROOT_DIR, 'data', 'demo', image_name + '.jpg')
     im = cv2.imread(im_file)
-
-    # Load pre-computed Selected Search object proposals
-    # box_file = os.path.join(cfg.ROOT_DIR, 'data', 'demo',
-    #                         image_name + '_boxes.mat')
-    # obj_proposals = sio.loadmat(box_file)['boxes']
-
-    obj_proposals = np.array(selective_search.get_windows([im_file]))[0, :, :]
-    print obj_proposals 
-    print obj_proposals.shape
-    # delete rows with boxes of 0 area
-    to_delete = []
-    for i in range(obj_proposals.shape[0]):
-        current = obj_proposals[i, :]
-        if current[0] == current[2] or current[1] == current[3]:
-           to_delete.append(i) 
-    obj_proposals = np.delete(obj_proposals, to_delete, axis=0)
-    print 'after deletion', obj_proposals.shape
 
     # Detect all object classes and regress object bounds
     timer = Timer()
@@ -148,8 +100,8 @@ def logo_demo(net, image_name, classes):
         cls_scores = scores[:, cls_ind]
         dets = np.hstack((cls_boxes,
                           cls_scores[:, np.newaxis])).astype(np.float32)
-        # keep = nms(dets, NMS_THRESH)
-        # dets = dets[keep, :]
+        keep = nms(dets, NMS_THRESH)
+        dets = dets[keep, :]
         print 'All {} detections with p({} | box) >= {:.1f}'.format(cls, cls,
                                                                     CONF_THRESH)
         vis_detections(im, cls, dets, thresh=CONF_THRESH)
@@ -164,9 +116,6 @@ def parse_args():
                         action='store_true')
     parser.add_argument('--net', dest='demo_net', help='Network to use [vgg16]',
                         choices=NETS.keys(), default='vgg16')
-    parser.add_argument('--caffemodel', dest='caffemodel',
-                        help='Path to network caffemodel weights',
-                        default="")
 
     args = parser.parse_args()
 
@@ -176,11 +125,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     prototxt = os.path.join('models', NETS[args.demo_net][0], 'test.prototxt')
-    # caffemodel = os.path.join('data', 'caffenet_fast_rcnn_iter_10000.caffemodel')
-    if not args.caffemodel:
-        caffemodel = os.path.join('data', 'fast_rcnn_models', NETS[args.demo_net][1])
-    else:
-	caffemodel = args.caffemodel
+    caffemodel = os.path.join('data', 'fast_rcnn_models',
+                              NETS[args.demo_net][1])
 
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.\nDid you run ./data/script/'
@@ -196,16 +142,7 @@ if __name__ == '__main__':
     print '\n\nLoaded network {:s}'.format(caffemodel)
 
     print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-    print 'Running logo demo:'
-    logo_demo(net, '1165690', CLASSES[1:])
-    logo_demo(net, '2127104125', CLASSES[1:])
-    logo_demo(net, '4509418', CLASSES[1:])
-    logo_demo(net, '779301', CLASSES[1:])
-    logo_demo(net, '82814', CLASSES[1:])
-    logo_demo(net, '88384321', CLASSES[1:])
-    logo_demo(net, 'Heineken-Logo', CLASSES[1:])
-    logo_demo(net, 'starbucks', CLASSES[1:])
-    logo_demo(net, 'starbucks3', CLASSES[1:])
-    logo_demo(net, 'corona', CLASSES[1:])
+    print 'Demo for data/demo/000004.jpg'
+    demo(net, '000004', CLASSES)
 
     plt.show()
