@@ -32,7 +32,7 @@ def get_windows(image_fnames, cmd='selective_search'):
 
     # Execute command in MATLAB.
     # mc = "matlab -nojvm -r \"try; {}; catch; exit; end; exit\"".format(command)
-    mc = "/usr/local/MATLAB/R2013a/bin/matlab -nojvm -r \"try; {}; catch; exit; end; exit\"".format(command)
+    mc = "matlab -nojvm -r \"try; {}; catch; exit; end; exit\"".format(command)
     pid = subprocess.Popen(
         shlex.split(mc), stdout=open('/dev/null', 'w'), cwd=script_dirname)
     retcode = pid.wait()
