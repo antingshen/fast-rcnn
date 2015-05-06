@@ -119,16 +119,24 @@ def logo_demo(net, image_name, classes):
     #                         image_name + '_boxes.mat')
     # obj_proposals = sio.loadmat(box_file)['boxes']
 
-    obj_proposals = np.array(selective_search.get_windows([im_file]))[0, :, :]
+    # Calculate Selected Search object proposals
+    # obj_proposals = np.array(selective_search.get_windows([im_file]))[0, :, :]
+
+    # Use the entire image as a project proposal
+    print im.shape
+    obj_proposals = np.array(
+        [[0, 0, im.shape[0], im.shape[1]],
+        [0, 0, im.shape[0], im.shape[1]]])
+
     print obj_proposals 
     print obj_proposals.shape
     # delete rows with boxes of 0 area
-    to_delete = []
-    for i in range(obj_proposals.shape[0]):
-        current = obj_proposals[i, :]
-        if current[0] == current[2] or current[1] == current[3]:
-           to_delete.append(i) 
-    obj_proposals = np.delete(obj_proposals, to_delete, axis=0)
+    # to_delete = []
+    # for i in range(obj_proposals.shape[0]):
+    #     current = obj_proposals[i, :]
+    #     if current[0] == current[2] or current[1] == current[3]:
+    #        to_delete.append(i)
+    # obj_proposals = np.delete(obj_proposals, to_delete, axis=0)
     print 'after deletion', obj_proposals.shape
 
     # Detect all object classes and regress object bounds
