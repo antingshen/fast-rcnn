@@ -17,6 +17,6 @@ time ./tools/train_net.py --gpu 1 \
 
 time ./tools/test_net.py --gpu 1 \
   --def models/CaffeNet/no_bbox_reg/test.prototxt \
-  --net output/no_bbox_reg/voc_logo_trainval/caffenet_fast_rcnn_no_bbox_reg_iter_40000.caffemodel \
+  --net output/no_bbox_reg/voc_logo_trainval/caffenet_fast_rcnn_no_bbox_reg_iter_30000.caffemodel \
   --imdb voc_logo_test \
   --cfg experiments/cfgs/no_bbox_reg.yml
