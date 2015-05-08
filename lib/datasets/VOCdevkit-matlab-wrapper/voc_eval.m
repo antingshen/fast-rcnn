@@ -5,29 +5,56 @@ VOCopts.testset = test_set;
 
 for i = 1:length(VOCopts.classes)
   cls = VOCopts.classes{i};
+  if strcmp(cls, 'hp')
+    continue
+  end
   res(i) = voc_eval_cls(cls, VOCopts, comp_id, output_dir, rm_res);
+  % res(i) = load([output_dir '/' cls '_pr.mat']);
 end
 
 fprintf('\n~~~~~~~~~~~~~~~~~~~~\n');
 fprintf('Results:\n');
 aps = [res(:).ap]';
-% TODO: remove HP
 fprintf('%.1f\n', aps * 100);
 fprintf('Mean mAP: %.1f\n', mean(aps) * 100);
 fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
-all_tp = res(1).tp;
-all_fp = res(1).fp;
+% keys(res(1).tp_map)
+% keys(res(2).tp_map)
+
+all_tp_map = res(1).tp_map;
+all_fp_map = res(1).fp_map;
 all_npos = res(1).npos;
 
 for i = 2:length(VOCopts.classes)
-  all_tp = all_tp + res(i).tp;
-  all_fp = all_fp + res(i).fp;
-  all_npos = all_npos + res(i).npos;
+  cls = VOCopts.classes{i};
+  if strcmp(cls, 'hp')
+    continue
+  end
+  current = res(i);
+  current_keys = keys(current.tp_map);
+  for j=1:length(current_keys)
+    key = current_keys{j};
+    if ~isKey(all_tp_map, key)
+      all_tp_map(key) = 0;
+      all_fp_map(key) = 0;
+    end
+    all_tp_map(key) = all_tp_map(key) + current.tp_map(key);
+    all_fp_map(key) = all_fp_map(key) + current.fp_map(key);
+  end
+  all_npos = all_npos + current.npos;
 end
 
-all_rec = all_tp / all_npos;
-all_prec = all_tp ./ (all_tp + all_fp);
+[sc1, si1] = sort(-cell2mat(keys(all_tp_map)));
+all_tp = cell2mat(values(all_tp_map));
+all_tp = cumsum(all_tp(si1));
+
+[sc2, si2] = sort(-cell2mat(keys(all_fp_map)));
+all_fp = cell2mat(values(all_fp_map));
+all_fp = cumsum(all_fp(si2));
+
+all_rec = (all_tp / all_npos)';
+all_prec = (all_tp ./ (all_tp + all_fp))';
 
 all_ap=0;
 for t=0:0.1:1
@@ -44,7 +71,7 @@ plot(all_rec,all_prec,'-');
 grid;
 xlabel 'recall'
 ylabel 'precision'
-title(sprintf('overall: %s, subset: %s, AP = %.3f',cls,VOCopts.testset,all_ap));
+title(sprintf('overall, subset: %s, AP = %.3f',VOCopts.testset,all_ap));
 
 all_ap_auc = xVOCap(all_rec, all_prec);
 
@@ -73,7 +100,7 @@ do_eval = 1; %(str2num(year) <= 2007) | ~strcmp(test_set, 'test');
 if do_eval
   % Bug in VOCevaldet requires that tic has been called first
   tic;
-  [recall, prec, ap, tp, fp, npos] = VOCevaldet(VOCopts, comp_id, cls, true);
+  [recall, prec, ap, tp_map, fp_map, npos] = VOCevaldet(VOCopts, comp_id, cls, true);
   ap_auc = xVOCap(recall, prec);
 
   % force plot limits
@@ -89,12 +116,12 @@ res.recall = recall;
 res.prec = prec;
 res.ap = ap;
 res.ap_auc = ap_auc;
-res.tp = tp;
-res.fp = fp;
+res.tp_map = tp_map;
+res.fp_map = fp_map;
 res.npos = npos;
 
 save([output_dir '/' cls '_pr.mat'], ...
-     'res', 'recall', 'prec', 'ap', 'ap_auc', 'tp', 'fp', 'npos');
+     'res', 'recall', 'prec', 'ap', 'ap_auc', 'tp_map', 'fp_map', 'npos');
 
 if rm_res
   delete(res_fn);
