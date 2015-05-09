@@ -13,14 +13,22 @@ for i = 1:length(VOCopts.classes)
 end
 
 fprintf('\n~~~~~~~~~~~~~~~~~~~~\n');
-fprintf('Results:\n');
+fprintf('AP Results:\n');
 aps = [res(:).ap]';
-fprintf('%.1f\n', aps * 100);
-fprintf('Mean mAP: %.1f\n', mean(aps) * 100);
-fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
-% keys(res(1).tp_map)
-% keys(res(2).tp_map)
+current_cls = 1;
+for i=1:size(aps, 1)
+  cls = VOCopts.classes{current_cls};
+  if strcmp(cls, 'hp')
+    current_cls = current_cls + 1;
+    cls = VOCopts.classes{current_cls};
+  end
+  fprintf('%s: %.1f\n', cls, aps(i) * 100);
+  current_cls = current_cls + 1;
+end
+
+fprintf('mAP: %.1f\n', mean(aps) * 100);
+fprintf('~~~~~~~~~~~~~~~~~~~~\n');
 
 all_tp_map = res(1).tp_map;
 all_fp_map = res(1).fp_map;
